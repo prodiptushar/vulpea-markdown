@@ -1,114 +1,173 @@
+# vulpea-markdown
+
 [![License GPL 3][badge-license]](http://www.gnu.org/licenses/gpl-3.0.txt)
 
-Use [Org-roam](https://www.orgroam.com/) with Markdown files by adding Md-roam
-to it.  Md-roam extends the features and functions provided by Org-roam to
-support Markdown files. Mix Markdown with Org files in a single Org-roam database
-for your Zettelkasten-style note-taking and backlinks.
+Markdown notes in the [Vulpea](https://github.com/d12frosted/vulpea) v2
+database.  This is a port of [md-roam](https://github.com/nobiot/md-roam)
+from Org-roam to Vulpea: it lets Markdown and Org files live in the same
+Vulpea database, with titles, aliases, tags, backlinks, queries and
+Pandoc-style citations working for both.
 
-![Screen shot showing main features of Org-roam supported by Md-roam](./images/md-roam-v2-overview.png)
+Unlike md-roam, this package does not advise a dozen internals.  It uses
+only two supported Vulpea seams:
 
-1. Title and other meta data in the YAML front matter
+1. `vulpea-db--parse-file` is advised to build a `vulpea-parse-ctx`
+   directly for Markdown files (no `org-element` involved).
+2. Two extractors rewrite `:links` into `id:` links and store citations,
+   so everything downstream — notes/tags/links tables, backlinks,
+   `vulpea-select`, org-ql-style queries — works unchanged.
 
-2. `#tag` support to categorize notes
+[badge-license]: https://img.shields.io/badge/license-GPL--3.0-blue.svg
 
-3. Note as a reference material (literature notes or notes on website) with `roam_refs:`
+## Requirements
 
-4. Aliases of a note with `roam_aliases:` in the YAML array syntax with `["alias1", "alias two"]`
-
-5. Link with `[[wiki-link]]` syntax that appears as a backlink and "in-line search" with `Company` or `Corfu`; you can use the **title** or an **alias** of a note
-
-6. Citations with Pandoc style `[@citekey]`, `@citekey` `-@citekey`, etc. for Markdown files; for Org, Org-ref or Org-cite styles as Org-roam support them
-
-7. Markdown and Org citations for reference materials; they appear in the reflink section
-
-8. Backlinks between Org and Markdown files both ways; you can mix both formats in a single Org-roam database
-
-9. Org-roam standard backlink buffer with no modification to the database schema and backlink buffer
-
-10. Graph and note preview by [Org-roam-ui (ORUI)](https://github.com/org-roam/org-roam-ui)
-
-![Graph and note preview by ORUI](./images/ORUI.png)
-
-
-# Getting Started
+- Emacs 29.1+
+- `vulpea` 2.0+ (developed against 2.7)
+- `markdown-mode` 2.5+
+- `emacsql` (Vulpea dependency)
 
 ## Installation
 
-This package is not available on MELPA or ELPA. Manual installation is required.
+The package is not on MELPA.  Clone the repository and add it to your
+`load-path`:
 
-Download or clone this repo, put the `.el` file into your load-path, and put
-something like this in your init file.
-
-```emacs-lisp
-(add-to-list  'load-path "path/to/md-roam")
+```sh
+git clone https://github.com/<you>/vulpea-markdown.git ~/.emacs.d/lisp/vulpea-markdown
 ```
 
-## Basic Configuration
+With `use-package` and `straight.el`:
 
-Org-roam must be configured before Md-roam. As a minimal configuration for Md-roam, these should be sufficient:
-
-- `(setq org-roam-file-extensions '("org" "md")) ; enable Org-roam for a markdown extension`
-- `(md-roam-mode 1) ; md-roam-mode needs to be active before org-roam-db-sync`
-- `(setq md-roam-file-extension "md") ; Default is "md". Specify an extension such as "markdown"`
-
-```emacs-lisp
-(require 'org-roam)
-(setq org-roam-directory (file-truename "path/to/org-roam-directory"))
-;; file-truename is optional; it seems required when you use symbolic
-;; links, which Org-roam does not resolve
-(setq org-roam-file-extensions '("org" "md")) ; enable Org-roam for a markdown extension
-(add-to-list 'load-path "path/to/md-roam") ; installation as above
-(require 'md-roam)
-(md-roam-mode 1) ; md-roam-mode must be active before org-roam-db-sync
-(setq md-roam-file-extension "md") ; default "md". Specify an extension such as "markdown"
-(org-roam-db-autosync-mode 1) ; autosync-mode triggers db-sync. md-roam-mode must be already active
+```elisp
+(use-package vulpea-md
+  :straight (vulpea-markdown :type git :host github
+                             :repo "<you>/vulpea-markdown"
+                             :files ("vulpea-md.el"))
+  :after vulpea
+  :config
+  (vulpea-md-mode 1))
 ```
 
-Additionally, you can use `org-roam-capture-templates` for Markdown files like this:
+## Configuration
 
-```emacs-lisp
-(add-to-list 'org-roam-capture-templates
-    '("m" "Markdown" plain "" :target
-        (file+head "%<%Y-%m-%dT%H%M%S>.md"
-"---\ntitle: ${title}\nid: %<%Y-%m-%dT%H%M%S>\ncategory: \n---\n")
-    :unnarrowed t))
+A minimal setup.  **Enable `vulpea-md-mode` before
+`vulpea-db-autosync-mode`** — the mode registers `.md` and `.markdown`
+with `vulpea-db-extra-extensions`, which the sync scanner needs:
+
+```elisp
+(add-to-list 'load-path "~/.emacs.d/lisp/vulpea-markdown")
+(require 'vulpea-md)
+
+(setq vulpea-directory "~/notes")          ; your vault ( Org + Markdown )
+(vulpea-md-mode 1)                         ; must come first
+(vulpea-db-autosync-mode 1)
 ```
 
-For interactive commands, you can use Org-roam's standard ones. There is no specific commands for Md-roam:
+Other extensions can be changed before enabling the mode:
 
-```emacs-lisp
-;;;; Org-roam
-(define-key global-map (kbd "C-c n f") #'org-roam-node-find)
-(define-key global-map (kbd "C-c n c") #'org-roam-capture)
-(define-key global-map (kbd "C-c n i") #'org-roam-node-insert)
-(define-key global-map (kbd "C-c n l") #'org-roam-buffer-toggle)
+```elisp
+(setq vulpea-md-extensions '("md" "markdown" "mdown"))
 ```
 
-## "In-line search" with Company and Corfu
+If you toggle the mode in a running session, force a re-index so the
+database matches the new setup:
 
-With Md-roam, you can use completion-at-point for wiki links within Org-roam. Md-roam currently does not implement support for `org-roam-complete-everywhere`. I will not be able to provide a fix any time soon -- please consider this option unsupported (see issue [#82](https://github.com/nobiot/md-roam/issues/82))
-
-![Corfu animation](./images/corfu.gif)
-
-
-For [Company](https://github.com/company-mode/company-mode), there is no specific configuration. Md-roam implements `completion-at-point` (or `capf`); use it as a Company backend. For more detail, refer to Company's documentation.
-
-For [Corfu](https://github.com/minad/corfu), add something like this below to get <kbd>Tab</kbd> to work for `corfu-mode`. By default, Markdown-mode's <kbd>Tab</kbd> function does not use `complete-at-point` like Org-mode's equivalent does.
-
-```emacs-lisp
-(with-eval-after-load 'markdown-mode
-  (advice-add #'markdown-indent-line :before-until #'completion-at-point))
+```elisp
+M-x vulpea-md-reindex
 ```
 
-# License
+## Note format
 
-Md-Roam: Copyright © Noboru Ota
-Org-Roam: Copyright © Jethro Kuan and contributors.
+Only the file-level note is indexed, and it needs an `id` in YAML front
+matter — exactly like md-roam.  Headings are not separate notes.
 
-Distributed under the GNU General Public License, Version 3
+```markdown
+---
+id: 6b0b6b0e-0c1d-4f6e-9f1a-3b2c4d5e6f70
+title: My note
+aliases: [One, "Two words"]     # ROAM_ALIASES also works
+tags: [project, "#status"]      # or: tags: #project #status
+ROAM_REFS: https://example.org/source
+---
 
-[org]: https://orgmode.org/
-[badge-license]: https://img.shields.io/badge/license-GPL_3-green.svg
-[docs]: https://org-roam.github.io/org-roam/manual/
-[slack]: https://join.slack.com/t/orgroam/shared_invite/zt-deoqamys-043YQ~s5Tay3iJ5QRI~Lxg
-[discourse]: https://org-roam.discourse.group/
+# My note
+
+Links: [[Another note]], [[Another note|friendly label]],
+[[alias of another note]], [[id:UUID-of-a-note]],
+[relative file](another-note.md), [with anchor](another-note.md#intro),
+[external](https://example.com).
+
+A Pandoc citation like [@doe2020] or -@smith2021 is indexed too.
+```
+
+`M-x vulpea-md-add-id` inserts an `id` (and a `title` if needed) into the
+front matter of the current file.
+
+### Link resolution
+
+- `[[Title]]`, `[[Title|label]]` and alias links resolve to a note's id.
+- `[label](other.md)` and `[label](other.md#heading)` resolve by path;
+  anchors and query strings are ignored for lookup.
+- `[[id:UUID]]` and `[label](id:UUID)` work directly.
+- External schemes (`https`, `http`, ...) are indexed as their own link
+  type, just like Org links.
+- Unresolvable wiki/file links are dropped, as in md-roam.
+
+Resolution is **order-independent**: a forward link to a note that has
+not been indexed yet still resolves.  The package builds a small index
+from the front matter of the Markdown files in your sync directories and
+falls back to the database (which also covers Org notes).  The index
+refreshes when files are added, removed or modified.
+
+### Following and inserting links
+
+- `M-x vulpea-md-insert` picks a note and inserts `[[title]]`.
+- `M-x markdown-follow-wiki-link-at-point` (`M-.` in `markdown-mode`)
+  follows `[[wiki links]]` to indexed Org or Markdown notes.
+- Following an inline link to a `.md` file or `id:` goes to the indexed
+  note as well.
+
+### Backlinks and queries
+
+Everything uses Vulpea's normal database, so no special API is needed:
+
+```elisp
+(vulpea-db-query-by-links-some (list (vulpea-note-id note)))
+(vulpea-db-query-by-tags-some '("project"))
+```
+
+`vulpea-find-backlink`, `vulpea-select` and the rest of the Vulpea
+ecosystem work with Markdown notes out of the box.  Citations are stored
+in the `md-citations` table (columns `note-id`, `citekey`).
+
+## Limitations
+
+- One file-level note per file; headings are not indexed.
+- The YAML reader understands the flat subset shown above (scalars, flow
+  and block lists).  It is not a full YAML parser.
+- Links inside fenced code blocks are currently indexed too.
+- Notes without an `id` are not added to the database.
+
+## Development / tests
+
+The test suite needs Emacs with the dependencies available on
+`load-path` (the runner auto-detects a local `straight` build tree):
+
+```sh
+make test
+```
+
+or directly:
+
+```sh
+emacs --batch -l test/run-tests.el
+```
+
+Byte-compile check:
+
+```sh
+make compile
+```
+
+## License
+
+GPL-3.0-or-later, same as md-roam and Vulpea.  See [LICENSE](LICENSE).
