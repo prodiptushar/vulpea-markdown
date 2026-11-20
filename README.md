@@ -60,43 +60,25 @@ git clone https://github.com/prodiptushar/vulpea-markdown.git \
 
 ### Doom Emacs
 
-Doom manages packages with `straight.el` through `package!` recipes.
-
-Add the recipe to `~/.doom.d/packages.el` (or `~/.config/doom/packages.el`
-in newer Doom installs):
+Add to `~/.doom.d/packages.el` (or `~/.config/doom/packages.el`) and run
+`doom sync`:
 
 ```elisp
-;; ~/.doom.d/packages.el
 (package! vulpea-md
   :recipe (:host github :repo "prodiptushar/vulpea-markdown"
            :files ("vulpea-md.el")))
 ```
 
-If you manage Vulpea yourself rather than through a Doom module, also add
-`(package! vulpea)` there.  Then install and sync:
-
-```sh
-doom sync        # add `doom sync -u` later to pull updates
-```
-
-Put the configuration in `~/.doom.d/config.el` (or
-`~/.config/doom/config.el`).  Doom loads `config.el` after its modules, so
-if Vulpea's autosync is already running, stop it, enable this mode, and
-start it again:
+Then add to `~/.doom.d/config.el` (or `~/.config/doom/config.el`) and
+restart Doom:
 
 ```elisp
-;; ~/.doom.d/config.el
 (after! vulpea
-  (setq vulpea-directory "~/notes")   ; your vault (Org + Markdown)
-
-  (when (bound-and-true-p vulpea-db-autosync-mode)
-    (vulpea-db-autosync-mode -1))
-  (require 'vulpea-md)
-  (vulpea-md-mode 1)
-  (vulpea-db-autosync-mode 1))
+  (vulpea-md-mode 1))
 ```
 
-Restart Doom (or `M-x doom/reload`) afterwards.
+If Vulpea's autosync was already running when the mode was enabled, run
+`M-x vulpea-md-reindex` once so Markdown files are indexed.
 
 ## Configuration
 
