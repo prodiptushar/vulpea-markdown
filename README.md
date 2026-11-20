@@ -154,6 +154,16 @@ refreshes when files are added, removed or modified.
 
 ### Following and inserting links
 
+- `M-x vulpea-md-new-note` (alias: `vulpea-markdown-new-note`) prompts for
+  a title, creates a file with front matter (`id` and `title`) in
+  `vulpea-markdown-directory` and opens it.  The directory defaults to a
+  `markdown/` subdirectory of `vulpea-directory` (or `org-directory`) and
+  is created if missing.  Override it with:
+
+  ```elisp
+  (setq vulpea-markdown-directory "~/notes/markdown")
+  ```
+
 - `M-x vulpea-md-insert` picks a note and inserts `[[title]]`.
 - `M-x markdown-follow-wiki-link-at-point` (`M-.` in `markdown-mode`)
   follows `[[wiki links]]` to indexed Org or Markdown notes.

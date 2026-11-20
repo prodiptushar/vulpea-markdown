@@ -9,4 +9,6 @@
 - Store Pandoc-style citations in the `md-citations` table.
 - Register Markdown extensions with Vulpea's sync scanner.
 - Follow wiki links and inline note links to indexed Org/Markdown notes.
+- `vulpea-markdown-directory` and `vulpea-md-new-note` for creating
+  ready-to-index Markdown notes from a title.
 - ERT test suite and batch test runner.

@@ -66,6 +66,16 @@ afterwards."
   :type '(repeat string)
   :group 'vulpea-md)
 
+(defcustom vulpea-markdown-directory
+  (expand-file-name "markdown" (or (bound-and-true-p vulpea-directory)
+                                   (bound-and-true-p org-directory)
+                                   user-emacs-directory))
+  "Directory where new markdown notes are stored.
+Defaults to a `markdown' subdirectory of `vulpea-directory' (falling
+back to `org-directory').  It is created automatically if missing."
+  :type 'directory
+  :group 'vulpea-md)
+
 (defvar vulpea-md--added-extensions nil
   "Extensions this mode added to `vulpea-db-extra-extensions'.")
 
@@ -437,6 +447,44 @@ Intended for `markdown-follow-link-functions'."
   (interactive)
   (let ((note (vulpea-select "Note")))
     (insert "[[" (vulpea-note-title note) "]]")))
+
+(defun vulpea-md--slug (title)
+  "Return a file-name-safe slug for TITLE."
+  (let ((slug (replace-regexp-in-string
+               "\\`-+|-+\\'" ""
+               (replace-regexp-in-string "[^[:alnum:]]+" "-"
+                                         (downcase title)))))
+    (if (string-empty-p slug) "note" slug)))
+
+(defun vulpea-md--unique-path (dir slug)
+  "Return an unused .md path in DIR based on SLUG."
+  (let ((path (expand-file-name (concat slug ".md") dir))
+        (n 1))
+    (while (file-exists-p path)
+      (setq path (expand-file-name (format "%s-%d.md" slug (1+ n)) dir))
+      (setq n (1+ n)))
+    path))
+
+;;;###autoload
+(defun vulpea-md-new-note (title)
+  "Create and open a new markdown note titled TITLE with a fresh id.
+The file is written to `vulpea-markdown-directory', which is created
+if it does not exist.  Saving the file lets Vulpea index it when
+autosync is enabled."
+  (interactive "sNote title: ")
+  (let* ((dir (file-name-as-directory
+               (expand-file-name vulpea-markdown-directory)))
+         (path (vulpea-md--unique-path dir (vulpea-md--slug title)))
+         (id (org-id-uuid)))
+    (make-directory dir t)
+    (find-file path)
+    (insert (format "---\nid: %s\ntitle: %S\n---\n\n" id title))
+    (save-buffer)
+    (message "Created markdown note: %s" path)
+    path))
+
+(defalias 'vulpea-markdown-new-note #'vulpea-md-new-note
+  "Alias for `vulpea-md-new-note'.")
 
 ;;;###autoload
 (defun vulpea-md-add-id ()

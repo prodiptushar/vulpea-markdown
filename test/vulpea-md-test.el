@@ -193,6 +193,33 @@ See [@doe2020] and @smith2021.\n")
       (vulpea-db-close)
       (delete-directory root t))))
 
+(ert-deftest vulpea-md-test-new-note ()
+  (let* ((root (make-temp-file "vulpea-md-new-" t))
+         (dir (expand-file-name "notes/markdown" root))
+         (vulpea-markdown-directory dir)
+         (vulpea-db-autosync-mode nil))
+    (unwind-protect
+        (progn
+          (let ((path (vulpea-md-new-note "My Test Note")))
+            (should (file-directory-p dir))
+            (should (equal path (expand-file-name "my-test-note.md" dir)))
+            (with-temp-buffer
+              (insert-file-contents path)
+              (let ((fm (vulpea-md--front-matter))
+                    (text (buffer-string)))
+                (should fm)
+                (should (string-match-p "id: [0-9a-f-]\\{36\\}" text))
+                (should (string-match-p "title: \"My Test Note\"" text)))))
+          ;; Same title does not overwrite an existing note.
+          (let ((path (vulpea-markdown-new-note "My Test Note")))
+            (should (equal path (expand-file-name "my-test-note-2.md" dir)))))
+      (dolist (buf (buffer-list))
+        (when (and (buffer-file-name buf)
+                   (string-prefix-p (file-truename root)
+                                    (file-truename (buffer-file-name buf))))
+          (kill-buffer buf)))
+      (delete-directory root t))))
+
 (ert-deftest vulpea-md-test-add-id ()
   (let ((default-directory (temporary-file-directory)))
     (with-temp-buffer
