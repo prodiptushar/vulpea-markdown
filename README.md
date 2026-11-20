@@ -28,30 +28,82 @@ only two supported Vulpea seams:
 
 ## Installation
 
-The package is not on MELPA.  Clone the repository and add it to your
-`load-path`:
+The package is not on MELPA.  The repository is
+<https://github.com/prodiptushar/vulpea-markdown>.
 
-```sh
-git clone https://github.com/<you>/vulpea-markdown.git ~/.emacs.d/lisp/vulpea-markdown
-```
-
-With `use-package` and `straight.el`:
+### Regular Emacs with `use-package` + `straight.el`
 
 ```elisp
 (use-package vulpea-md
   :straight (vulpea-markdown :type git :host github
-                             :repo "<you>/vulpea-markdown"
+                             :repo "prodiptushar/vulpea-markdown"
                              :files ("vulpea-md.el"))
   :after vulpea
   :config
   (vulpea-md-mode 1))
 ```
 
+Or, without straight, clone the repository and point `use-package` at it:
+
+```sh
+git clone https://github.com/prodiptushar/vulpea-markdown.git \
+  ~/.emacs.d/lisp/vulpea-markdown
+```
+
+```elisp
+(use-package vulpea-md
+  :load-path "~/.emacs.d/lisp/vulpea-markdown"
+  :after vulpea
+  :config
+  (vulpea-md-mode 1))
+```
+
+### Doom Emacs
+
+Doom manages packages with `straight.el` through `package!` recipes.
+
+Add the recipe to `~/.doom.d/packages.el` (or `~/.config/doom/packages.el`
+in newer Doom installs):
+
+```elisp
+;; ~/.doom.d/packages.el
+(package! vulpea-md
+  :recipe (:host github :repo "prodiptushar/vulpea-markdown"
+           :files ("vulpea-md.el")))
+```
+
+If you manage Vulpea yourself rather than through a Doom module, also add
+`(package! vulpea)` there.  Then install and sync:
+
+```sh
+doom sync        # add `doom sync -u` later to pull updates
+```
+
+Put the configuration in `~/.doom.d/config.el` (or
+`~/.config/doom/config.el`).  Doom loads `config.el` after its modules, so
+if Vulpea's autosync is already running, stop it, enable this mode, and
+start it again:
+
+```elisp
+;; ~/.doom.d/config.el
+(after! vulpea
+  (setq vulpea-directory "~/notes")   ; your vault (Org + Markdown)
+
+  (when (bound-and-true-p vulpea-db-autosync-mode)
+    (vulpea-db-autosync-mode -1))
+  (require 'vulpea-md)
+  (vulpea-md-mode 1)
+  (vulpea-db-autosync-mode 1))
+```
+
+Restart Doom (or `M-x doom/reload`) afterwards.
+
 ## Configuration
 
-A minimal setup.  **Enable `vulpea-md-mode` before
-`vulpea-db-autosync-mode`** — the mode registers `.md` and `.markdown`
-with `vulpea-db-extra-extensions`, which the sync scanner needs:
+A minimal setup for a plain Emacs config.  **Enable `vulpea-md-mode`
+before `vulpea-db-autosync-mode`** — the mode registers `.md` and
+`.markdown` with `vulpea-db-extra-extensions`, which the sync scanner
+needs:
 
 ```elisp
 (add-to-list 'load-path "~/.emacs.d/lisp/vulpea-markdown")

@@ -1,6 +1,7 @@
 ;;; vulpea-md.el --- Markdown notes in the Vulpea database -*- lexical-binding: t; -*-
 
 ;; Project: vulpea-markdown
+;; URL: https://github.com/prodiptushar/vulpea-markdown
 ;; Port of md-roam (Noboru Ota, https://github.com/nobiot/md-roam) from
 ;; org-roam to Vulpea v2.  License: GPL-3.0-or-later, same as both.
 ;; Package-Requires: ((emacs "29.1") (vulpea "2.0") (markdown-mode "2.5"))
